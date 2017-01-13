@@ -105,20 +105,20 @@ class AlgoliaEngine extends Engine
      */
     protected function performSearch(Builder $builder, array $options = [])
     {
-        $agolia = $this->algolia->initIndex(
+        $algolia = $this->algolia->initIndex(
             $builder->index ?: $builder->model->searchableAs()
         );
 
         if ($builder->callback) {
             return call_user_func(
                 $builder->callback,
-                $agolia,
+                $algolia,
                 $builder->query,
                 $options
             );
         }
 
-        return $agolia->search($builder->query, $options);
+        return $algolia->search($builder->query, $options);
     }
 
     /**
@@ -132,6 +132,17 @@ class AlgoliaEngine extends Engine
         return collect($builder->wheres)->map(function ($value, $key) {
             return $key.'='.$value;
         })->values()->all();
+    }
+
+    /**
+     * Pluck and return the primary keys of the given results.
+     *
+     * @param  mixed  $results
+     * @return \Illuminate\Support\Collection
+     */
+    public function mapIds($results)
+    {
+        return collect($results['hits'])->pluck('objectID')->values();
     }
 
     /**
@@ -155,7 +166,7 @@ class AlgoliaEngine extends Engine
         )->get()->keyBy($model->getKeyName());
 
         return Collection::make($results['hits'])->map(function ($hit) use ($model, $models) {
-            $key = $hit[$model->getKeyName()];
+            $key = $hit['objectID'];
 
             if (isset($models[$key])) {
                 return $models[$key];

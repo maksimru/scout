@@ -173,10 +173,19 @@ class ElasticsearchEngine extends Engine
             }
         }
 
+        $sorts = [];
+
+        if (collect($builder->orders)->count() > 0) {
+            foreach ($builder->orders as $value) {
+                $sorts[] = [$value['column'] => $value['direction']];
+            }
+        }
+
         $query = [
             'index' =>  $this->index,
             'type'  =>  $builder->model->searchableAs(),
             'body' => [
+                'sort' => $sorts,
                 'query' => [
                     'bool' => [
                         'filter' => $filters,
@@ -253,5 +262,16 @@ class ElasticsearchEngine extends Engine
     public function getTotalCount($results)
     {
         return $results['hits']['total'];
+    }
+
+    /**
+     * Pluck and return the primary keys of the given results.
+     *
+     * @param  mixed $results
+     * @return \Illuminate\Support\Collection
+     */
+    public function mapIds($results)
+    {
+        return collect($results['hits'])->pluck('objectID')->values();
     }
 }
