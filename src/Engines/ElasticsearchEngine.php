@@ -140,35 +140,124 @@ class ElasticsearchEngine extends Engine
      */
     protected function performSearch(Builder $builder, array $options = [])
     {
-        $filters = [];
-
-        $matches[] = [
-            'match' => [
-                '_all' => [
-                    'query' => $builder->query,
-                    'fuzziness' => 1
-                ]
-            ]
-        ];
+        $filters = $must = $mustNot = $ranges = $should = [];
 
         if (array_key_exists('filters', $options) && $options['filters']) {
-            foreach ($options['filters'] as $field => $value) {
-
+            foreach ($options['filters'] as $column => $value) {
                 if(is_numeric($value)) {
                     $filters[] = [
                         'term' => [
-                            $field => $value,
-                        ],
-                    ];
-                } elseif(is_string($value)) {
-                    $matches[] = [
-                        'match' => [
-                            $field => [
-                                'query' => $value,
-                                'operator' => 'and'
-                            ]
+                            $column => $value,
                         ]
                     ];
+                } elseif(is_string($value)) {
+                    $must[] = [
+                        'term' => [
+                            $column => $value
+                        ]
+                    ];
+                }
+            }
+        }
+
+        if (collect($builder->whereWithOperators)->count() > 0) {
+            foreach ($builder->whereWithOperators as $key => $item) {
+                $column = $item['column'];
+                $value = $item['value'];
+                $operator = str_replace('<>', '!=', strtolower($item['operator']));
+                switch ($operator) {
+                    case "=":
+                        if(is_numeric($value)) {
+                            $filters[] = [
+                                'term' => [
+                                    $column => $value,
+                                ]
+                            ];
+                        } elseif(is_string($value)) {
+                            $must[] = [
+                                'term' => [
+                                    $column => $value
+                                ]
+                            ];
+                        }
+                        break;
+                    case "!=":
+                        $mustNot[] = [
+                            'term' => [
+                                $column => $value,
+                            ]
+                        ];
+                        break;
+                    case ">":
+                        //gt
+                        $ranges[$column]['gt'] = $value;
+                        break;
+                    case ">=":
+                        //gte
+                        $ranges[$column]['gte'] = $value;
+                        break;
+                    case "<":
+                        //lt
+                        $ranges[$column]['lt'] = $value;
+                        break;
+                    case "<=":
+                        //lte
+                        $ranges[$column]['lte'] = $value;
+                        break;
+                    case "like":
+                        //type phrase
+                        $must[] = [
+                            'match' => [
+                                $column => [
+                                    'query' => $value,
+                                    'operator' => 'and'
+                                ]
+                            ]
+                        ];
+                        break;
+                }
+            }
+        }
+
+        collect($ranges)->count() > 0 && $must[]['range'] = $ranges;
+
+        if (collect($builder->orWheres)->count() > 0) {
+            foreach ($builder->orWheres as $key => $item) {
+                $column = $item['column'];
+                $value = $item['value'];
+                $operator = str_replace('<>', '!=', strtolower($item['operator']));
+                switch ($operator) {
+                    case "=":
+                        $should[] = ['match' => [$item['column'] => $item['value']]];
+                        break;
+                    case ">":
+                        //gt
+                        $should[]['range'][$column]['gt'] = $value;
+                        break;
+                    case ">=":
+                        //gte
+                        $should[]['range'][$column]['gte'] = $value;
+                        break;
+                    case "<":
+                        //lt
+                        $should[]['range'][$column]['lt'] = $value;
+                        break;
+                    case "<=":
+                        //lte
+                        $should[]['range'][$column]['lte'] = $value;
+                        break;
+                    case "like":
+                        $should[] = ['match' => [$item['column'] => $item['value']]];
+                        break;
+                }
+            }
+        }
+
+        if (collect($builder->whereIn)->count() > 0) {
+            foreach ($builder->whereIn as $key => $item) {
+                $values = explode(',', $item['values']);
+                foreach ($values as $value) {
+                    $should[] = ['match' => [$item['column'] => $value]];
                 }
             }
         }
@@ -189,11 +278,17 @@ class ElasticsearchEngine extends Engine
                 'query' => [
                     'bool' => [
                         'filter' => $filters,
-                        'must' => $matches
-                    ],
+                        'must' => $must,
+                        'must_not' => $mustNot,
+                        'should' => $should
+                    ]
                 ],
             ],
         ];
+
+        if (collect($should)->count() > 0) {
+            $query['body']['query']['bool']['minimum_should_match'] = 1;
+        }
 
         if (array_key_exists('size', $options)) {
             $query['size'] = $options['size'];

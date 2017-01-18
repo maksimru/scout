@@ -2,6 +2,7 @@
 
 namespace Laravel\Scout;
 
+use Closure;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -44,6 +45,27 @@ class Builder
     public $wheres = [];
 
     /**
+     * The "whereWithOperator" constraints added to the query.
+     *
+     * @var array
+     */
+    public $whereWithOperators = [];
+
+    /**
+     * The "or where" constraints added to the query.
+     *
+     * @var array
+     */
+    public $orWheres = [];
+
+    /**
+     * The "where in" constraints added to the query.
+     *
+     * @var array
+     */
+    public $whereIn = [];
+
+    /**
      * The "limit" that should be applied to the search.
      *
      * @var int
@@ -56,6 +78,15 @@ class Builder
      * @var array
      */
     public $orders = [];
+
+    /**
+     * All of the available clause operators.
+     *
+     * @var array
+     */
+    protected $operators = [
+        '=', '<', '>', '<=', '>=', '<>', '!=', 'like'
+    ];
 
     /**
      * Create a new search builder instance.
@@ -86,17 +117,64 @@ class Builder
     }
 
     /**
-     * Add a constraint to the search query.
+     * Handles dynamic "where" clauses to the query.
      *
-     * @param  string  $field
-     * @param  mixed  $value
+     * @param  string  $parameters
      * @return $this
      */
-    public function where($field, $value)
+    public function dynamicWhere($parameters)
     {
-        $this->wheres[$field] = $value;
+        $numArgs = collect($parameters)->count();
+        switch ($numArgs) {
+            case 1:
+                if (is_array($parameters[0]) && collect($parameters[0])->count() > 0) {
+                    foreach ($parameters[0] as $items) {
+                        list($column, $operator, $value) = $items;
+                        $this->whereWithOperators[] = ['column' => $column, 'operator' => $operator, 'value' => $value];
+                    }
+                }
+                ($parameters[0] instanceof Closure) && call_user_func($parameters[0], $this);
+                break;
+            case 2:
+                list($column, $value) = $parameters;
+                $this->wheres[$column] = $value;
+                break;
+            case 3:
+                list($column, $operator, $value) = $parameters;
+                if (in_array(strtolower($operator), $this->operators, true)) {
+                    $this->whereWithOperators[] = ['column' => $column, 'operator' => $operator, 'value' => $value];
+                }
+                break;
+        }
 
         return $this;
+    }
+
+    /**
+     * Add a "or where" clause to the query.
+     *
+     * @param  string  $column
+     * @param  string  $operator
+     * @param  string  $value
+     * @return $this
+     */
+    public function orWhere($column, $operator, $value)
+    {
+        if (in_array(strtolower($operator), $this->operators, true)) {
+            $this->orWheres[] = ['column' => $column, 'operator' => $operator, 'value' => $value];
+        }
+    }
+
+    /**
+     * Add a "where in" clause to the query.
+     *
+     * @param  string  $column
+     * @param  mixed   $values
+     * @return $this
+     */
+    public function whereIn($column, $values)
+    {
+        $this->whereIn[] = ['column' => $column, 'values' => $values];
     }
 
     /**
@@ -196,5 +274,21 @@ class Builder
     protected function engine()
     {
         return $this->model->searchableUsing();
+    }
+
+    /**
+     * Handle dynamic method calls into the method.
+     *
+     * @param  string  $method
+     * @param  array   $parameters
+     * @return mixed
+     *
+     * @throws \BadMethodCallException
+     */
+    public function __call($method, $parameters)
+    {
+        if (str_is($method, 'where')) {
+            return $this->dynamicWhere($parameters);
+        }
     }
 }
