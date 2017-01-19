@@ -209,7 +209,7 @@ class ElasticsearchEngine extends Engine
                         $must[] = [
                             'match' => [
                                 $column => [
-                                    'query' => str_replace('%', '', $value),
+                                    'query' => $value,
                                     'operator' => 'and'
                                 ]
                             ]
@@ -228,7 +228,7 @@ class ElasticsearchEngine extends Engine
                 $operator = str_replace('<>', '!=', strtolower($item['operator']));
                 switch ($operator) {
                     case "=":
-                        $should[] = ['term' => [$column => $value]];
+                        $should[] = ['match' => [$item['column'] => $item['value']]];
                         break;
                     case ">":
                         //gt
@@ -247,7 +247,7 @@ class ElasticsearchEngine extends Engine
                         $should[]['range'][$column]['lte'] = $value;
                         break;
                     case "like":
-                        $should[] = ['match' => [$column => str_replace('%', '', $value)]];
+                        $should[] = ['match' => [$item['column'] => $item['value']]];
                         break;
                 }
             }
@@ -255,9 +255,12 @@ class ElasticsearchEngine extends Engine
 
         if (collect($builder->whereIn)->count() > 0) {
             foreach ($builder->whereIn as $key => $item) {
-                $values = explode(',', $item['values']);
+                $values = $item['values'];
+                if (! is_array($values)) {
+                    $values = explode(',', $values);
+                }
                 foreach ($values as $value) {
-                    $should[] = ['match' => [$item['column'] => $value]];
+                    $should[] = ['term' => [$item['column'] => $value]];
                 }
             }
         }

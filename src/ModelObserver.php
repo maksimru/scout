@@ -58,7 +58,7 @@ class ModelObserver
             return;
         }
 
-        $model->searchable();
+        $model->find($model->getKey())->searchable();
     }
 
     /**

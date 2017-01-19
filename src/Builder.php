@@ -163,6 +163,8 @@ class Builder
         if (in_array(strtolower($operator), $this->operators, true)) {
             $this->orWheres[] = ['column' => $column, 'operator' => $operator, 'value' => $value];
         }
+
+        return $this;
     }
 
     /**
@@ -175,6 +177,8 @@ class Builder
     public function whereIn($column, $values)
     {
         $this->whereIn[] = ['column' => $column, 'values' => $values];
+
+        return $this;
     }
 
     /**
