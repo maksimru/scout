@@ -209,7 +209,7 @@ class ElasticsearchEngine extends Engine
                         $must[] = [
                             'match' => [
                                 $column => [
-                                    'query' => $value,
+                                    'query' => str_replace('%', '', $value),
                                     'operator' => 'and'
                                 ]
                             ]
@@ -228,7 +228,7 @@ class ElasticsearchEngine extends Engine
                 $operator = str_replace('<>', '!=', strtolower($item['operator']));
                 switch ($operator) {
                     case "=":
-                        $should[] = ['match' => [$item['column'] => $item['value']]];
+                        $should[] = ['term' => [$column => $value]];
                         break;
                     case ">":
                         //gt
@@ -247,7 +247,7 @@ class ElasticsearchEngine extends Engine
                         $should[]['range'][$column]['lte'] = $value;
                         break;
                     case "like":
-                        $should[] = ['match' => [$item['column'] => $item['value']]];
+                        $should[] = ['match' => [$column => str_replace('%', '', $value)]];
                         break;
                 }
             }
