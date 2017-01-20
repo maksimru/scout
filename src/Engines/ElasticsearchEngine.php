@@ -2,10 +2,10 @@
 
 namespace Laravel\Scout\Engines;
 
-use Laravel\Scout\Builder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
+use Laravel\Scout\Builder;
 
 class ElasticsearchEngine extends Engine
 {
@@ -36,17 +36,36 @@ class ElasticsearchEngine extends Engine
         $this->index = $index;
     }
 
+    public function putSettings(){
+        $this->elasticsearch->indices()->close([
+            'index' => $this->index,
+        ]);
+
+        $this->elasticsearch->indices()->putSettings([
+            'index' => $this->index,
+            'body' => [
+                'settings' => [
+                    'index.mapping.ignore_malformed' => true,
+                ]
+            ]
+        ]);
+
+        $this->elasticsearch->indices()->open([
+            'index' => $this->index,
+        ]);
+    }
+
     /**
      * Update the given model in the index.
      *
      * @param  Collection  $models
      * @return void
      */
-    public function update($models)
+    public function update($models, $searchable_index = null)
     {
         $body = new BaseCollection();
 
-        $models->each(function ($model) use ($body) {
+        $models->each(function ($model) use ($body, $searchable_index) {
             $array = $model->toSearchableArray();
 
             if (empty($array)) {
@@ -56,7 +75,7 @@ class ElasticsearchEngine extends Engine
             $body->push([
                 'index' => [
                     '_index' => $this->index,
-                    '_type' => $model->searchableAs(),
+                    '_type' => is_null($searchable_index) ? $model->searchableAs() : $searchable_index,
                     '_id' => $model->getKey(),
                 ],
             ]);
@@ -76,15 +95,15 @@ class ElasticsearchEngine extends Engine
      * @param  Collection  $models
      * @return void
      */
-    public function delete($models)
+    public function delete($models, $searchable_index = null)
     {
         $body = new BaseCollection();
 
-        $models->each(function ($model) use ($body) {
+        $models->each(function ($model) use ($body, $searchable_index) {
             $body->push([
                 'delete' => [
                     '_index' => $this->index,
-                    '_type' => $model->searchableAs(),
+                    '_type' => is_null($searchable_index) ? $model->searchableAs() : $searchable_index,
                     '_id'  => $model->getKey(),
                 ],
             ]);
@@ -141,6 +160,12 @@ class ElasticsearchEngine extends Engine
     protected function performSearch(Builder $builder, array $options = [])
     {
         $filters = $must = $mustNot = $ranges = $should = [];
+
+        $must[] = [
+            'query_string' => [
+                'query' => "*{$builder->query}*",
+            ]
+        ];
 
         if (array_key_exists('filters', $options) && $options['filters']) {
             foreach ($options['filters'] as $column => $value) {
@@ -332,23 +357,10 @@ class ElasticsearchEngine extends Engine
      */
     public function map($results, $model)
     {
-        if (count($results['hits']) === 0) {
+        if (count($results['hits']) === 0)
             return Collection::make();
-        }
-
-        $keys = collect($results['hits']['hits'])
-                    ->pluck('_id')
-                    ->values()
-                    ->all();
-
-        $models = $model->whereIn(
-            $model->getQualifiedKeyName(), $keys
-        )->get()->keyBy($model->getKeyName());
-
-        return Collection::make($results['hits']['hits'])->map(function ($hit) use ($model, $models) {
-                return isset($models[$hit['_source'][$model->getKeyName()]])
-                                        ? $models[$hit['_source'][$model->getKeyName()]] : null;
-        })->filter()->values();
+        else
+            return Collection::make(array_column($results['hits']['hits'],'_source'));
     }
 
     /**

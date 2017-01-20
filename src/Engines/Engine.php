@@ -2,18 +2,20 @@
 
 namespace Laravel\Scout\Engines;
 
-use Laravel\Scout\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Laravel\Scout\Builder;
 
 abstract class Engine
 {
+    abstract public function putSettings();
+
     /**
      * Update the given model in the index.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    abstract public function update($models);
+    abstract public function update($models, $searchable_index = null);
 
     /**
      * Remove the given model from the index.
@@ -21,7 +23,7 @@ abstract class Engine
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    abstract public function delete($models);
+    abstract public function delete($models, $searchable_index = null);
 
     /**
      * Perform the given search on the engine.

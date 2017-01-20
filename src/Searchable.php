@@ -2,9 +2,9 @@
 
 namespace Laravel\Scout;
 
-use Laravel\Scout\Jobs\MakeSearchable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as BaseCollection;
+use Laravel\Scout\Jobs\MakeSearchable;
 
 trait Searchable
 {
@@ -31,12 +31,12 @@ trait Searchable
     {
         $self = $this;
 
-        BaseCollection::macro('searchable', function () use ($self) {
-            $self->queueMakeSearchable($this);
+        BaseCollection::macro('searchable', function ($searchable_index = null) use ($self) {
+            $self->queueMakeSearchable($this, $searchable_index);
         });
 
-        BaseCollection::macro('unsearchable', function () use ($self) {
-            $self->queueRemoveFromSearch($this);
+        BaseCollection::macro('unsearchable', function ($searchable_index = null) use ($self) {
+            $self->queueRemoveFromSearch($this, $searchable_index);
         });
     }
 
@@ -46,14 +46,14 @@ trait Searchable
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    public function queueMakeSearchable($models)
+    public function queueMakeSearchable($models, $searchable_index = null)
     {
         if ($models->isEmpty()) {
             return;
         }
 
         if (! config('scout.queue')) {
-            return $models->first()->searchableUsing()->update($models);
+            return $models->first()->searchableUsing()->update($models, $searchable_index);
         }
 
         dispatch((new MakeSearchable($models))
@@ -67,13 +67,13 @@ trait Searchable
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    public function queueRemoveFromSearch($models)
+    public function queueRemoveFromSearch($models, $searchable_index = null)
     {
         if ($models->isEmpty()) {
             return;
         }
 
-        return $models->first()->searchableUsing()->delete($models);
+        return $models->first()->searchableUsing()->delete($models, $searchable_index);
     }
 
     /**

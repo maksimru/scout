@@ -2,18 +2,21 @@
 
 namespace Laravel\Scout\Engines;
 
-use Laravel\Scout\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Laravel\Scout\Builder;
 
 class NullEngine extends Engine
 {
+    public function putSettings(){
+    }
+
     /**
      * Update the given model in the index.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    public function update($models)
+    public function update($models, $searchable_index = null)
     {
         //
     }
@@ -24,7 +27,7 @@ class NullEngine extends Engine
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    public function delete($models)
+    public function delete($models, $searchable_index = null)
     {
         //
     }

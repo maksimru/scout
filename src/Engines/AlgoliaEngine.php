@@ -2,9 +2,9 @@
 
 namespace Laravel\Scout\Engines;
 
-use Laravel\Scout\Builder;
 use AlgoliaSearch\Client as Algolia;
 use Illuminate\Database\Eloquent\Collection;
+use Laravel\Scout\Builder;
 
 class AlgoliaEngine extends Engine
 {
@@ -26,6 +26,9 @@ class AlgoliaEngine extends Engine
         $this->algolia = $algolia;
     }
 
+    public function putSettings(){
+    }
+
     /**
      * Update the given model in the index.
      *
@@ -33,9 +36,9 @@ class AlgoliaEngine extends Engine
      * @throws \AlgoliaSearch\AlgoliaException
      * @return void
      */
-    public function update($models)
+    public function update($models, $searchable_index = null)
     {
-        $index = $this->algolia->initIndex($models->first()->searchableAs());
+        $index = $this->algolia->initIndex(is_null($searchable_index) ? $models->first()->searchableAs() : $searchable_index);
 
         $index->addObjects($models->map(function ($model) {
             $array = $model->toSearchableArray();
@@ -54,9 +57,9 @@ class AlgoliaEngine extends Engine
      * @param  \Illuminate\Database\Eloquent\Collection  $models
      * @return void
      */
-    public function delete($models)
+    public function delete($models, $searchable_index = null)
     {
-        $index = $this->algolia->initIndex($models->first()->searchableAs());
+        $index = $this->algolia->initIndex(is_null($searchable_index) ? $models->first()->searchableAs() : $searchable_index);
 
         $index->deleteObjects(
             $models->map(function ($model) {

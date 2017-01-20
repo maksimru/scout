@@ -2,10 +2,10 @@
 
 namespace Laravel\Scout;
 
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 use Laravel\Scout\Events\ModelsImported;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 class SearchableScope implements Scope
 {
@@ -30,16 +30,17 @@ class SearchableScope implements Scope
     public function extend(EloquentBuilder $builder)
     {
         $builder->macro('searchable', function (EloquentBuilder $builder) {
-            $builder->chunk(100, function ($models) use ($builder) {
-                $models->searchable();
-
+            $searchable_index = $builder->getModel()->searchableAs();
+            $builder->chunk(100, function ($models) use ($builder, $searchable_index) {
+                $models->searchable($searchable_index);
                 event(new ModelsImported($models));
             });
         });
 
         $builder->macro('unsearchable', function (EloquentBuilder $builder) {
-            $builder->chunk(100, function ($models) use ($builder) {
-                $models->unsearchable();
+            $searchable_index = $builder->getModel()->searchableAs();
+            $builder->chunk(100, function ($models) use ($builder, $searchable_index) {
+                $models->unsearchable($searchable_index);
             });
         });
     }

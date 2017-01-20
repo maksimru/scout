@@ -5,6 +5,7 @@ namespace Laravel\Scout;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Scout\Console\FlushCommand;
 use Laravel\Scout\Console\ImportCommand;
+use Laravel\Scout\Console\SetIndexSettingsCommand;
 
 class ScoutServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,7 @@ class ScoutServiceProvider extends ServiceProvider
             $this->commands([
                 ImportCommand::class,
                 FlushCommand::class,
+                SetIndexSettingsCommand::class,
             ]);
 
             $this->publishes([
