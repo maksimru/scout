@@ -8,6 +8,8 @@ use Laravel\Scout\Jobs\MakeSearchable;
 
 trait Searchable
 {
+    private $search_index = null;
+
     /**
      * Boot the trait.
      *
@@ -20,6 +22,31 @@ trait Searchable
         static::observe(new ModelObserver);
 
         (new static)->registerSearchableMacros();
+    }
+
+    public function scopeWithSearchIndex($query, $index)
+    {
+        $this->search_index = $index;
+        return $query;
+    }
+
+    public function setSearchIndex($search_index)
+    {
+        $this->search_index = $search_index;
+    }
+
+    public function isVirtualIndex(){
+        return $this->getSearchIndex() != $this->getTable();
+    }
+
+    public function getSearchIndex()
+    {
+        return is_null($this->search_index) ? $this->getTable() : $this->search_index;
+    }
+
+    public function searchableAs()
+    {
+        return config('scout.prefix').$this->getSearchIndex();
     }
 
     /**
@@ -57,8 +84,8 @@ trait Searchable
         }
 
         dispatch((new MakeSearchable($models))
-                ->onQueue($models->first()->syncWithSearchUsingQueue())
-                ->onConnection($models->first()->syncWithSearchUsing()));
+            ->onQueue($models->first()->syncWithSearchUsingQueue())
+            ->onConnection($models->first()->syncWithSearchUsing()));
     }
 
     /**
@@ -171,16 +198,6 @@ trait Searchable
         } finally {
             static::enableSearchSyncing();
         }
-    }
-
-    /**
-     * Get the index name for the model.
-     *
-     * @return string
-     */
-    public function searchableAs()
-    {
-        return config('scout.prefix').$this->getTable();
     }
 
     /**

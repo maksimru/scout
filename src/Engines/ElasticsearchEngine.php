@@ -359,8 +359,25 @@ class ElasticsearchEngine extends Engine
     {
         if (count($results['hits']) === 0)
             return Collection::make();
-        else
+        elseif($model->isVirtualIndex())
             return Collection::make(array_column($results['hits']['hits'],'_source'));
+        else
+        {
+            $keys = collect($results['hits']['hits'])
+                ->pluck('_id')
+                ->values()
+                ->all();
+
+            $models = $model->whereIn(
+                $model->getQualifiedKeyName(), $keys
+            )->get()->keyBy($model->getKeyName());
+
+            return Collection::make($results['hits']['hits'])->map(function ($hit) use ($model, $models) {
+                return isset($models[$hit['_source'][$model->getKeyName()]])
+                    ? $models[$hit['_source'][$model->getKeyName()]] : null;
+            })->filter()->values();
+
+        }
     }
 
     /**

@@ -1,5 +1,5 @@
 {
-    "name": "camry/scout",
+    "name": "maksimru/scout",
     "description": "Laravel Scout provides a driver based solution to searching your Eloquent models.",
     "keywords": [
         "algolia",
@@ -10,8 +10,8 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "camry.chen",
-            "email": "camry.chen@foxmail.com"
+            "name": "Maksim Martianov",
+            "email": "maxmtmn@gmail.com"
         }
     ],
     "require": {
