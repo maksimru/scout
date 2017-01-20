@@ -3,8 +3,8 @@
 namespace Laravel\Scout\Console;
 
 use Illuminate\Console\Command;
-use Laravel\Scout\Events\ModelsImported;
 use Illuminate\Contracts\Events\Dispatcher;
+use Laravel\Scout\Events\ModelsImported;
 
 class ImportCommand extends Command
 {
@@ -13,7 +13,7 @@ class ImportCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'scout:import {model}';
+    protected $signature = 'scout:import {model} {memory=512M}';
 
     /**
      * The console command description.
@@ -30,6 +30,8 @@ class ImportCommand extends Command
      */
     public function handle(Dispatcher $events)
     {
+        ini_set('memory_limit',$this->argument('memory'));
+
         $class = $this->argument('model');
 
         $model = new $class;
