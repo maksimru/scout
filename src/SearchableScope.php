@@ -31,7 +31,7 @@ class SearchableScope implements Scope
     {
         $builder->macro('searchable', function (EloquentBuilder $builder) {
             $searchable_index = $builder->getModel()->searchableAs();
-            $builder->chunk(100, function ($models) use ($builder, $searchable_index) {
+            $builder->chunk(500, function ($models) use ($builder, $searchable_index) {
                 $models->searchable($searchable_index);
                 event(new ModelsImported($models));
             });
@@ -39,7 +39,7 @@ class SearchableScope implements Scope
 
         $builder->macro('unsearchable', function (EloquentBuilder $builder) {
             $searchable_index = $builder->getModel()->searchableAs();
-            $builder->chunk(100, function ($models) use ($builder, $searchable_index) {
+            $builder->chunk(500, function ($models) use ($builder, $searchable_index) {
                 $models->unsearchable($searchable_index);
             });
         });
