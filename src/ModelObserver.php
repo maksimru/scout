@@ -58,7 +58,10 @@ class ModelObserver
             return;
         }
 
-        $model->find($model->getKey())->searchable();
+        $new_model = $model->find($model->getKey());
+
+        if(!is_null($new_model))
+            $new_model->searchable();
     }
 
     /**
