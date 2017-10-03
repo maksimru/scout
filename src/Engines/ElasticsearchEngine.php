@@ -163,7 +163,7 @@ class ElasticsearchEngine extends Engine
 
         $must[] = [
             'query_string' => [
-                'query' => "*{$builder->query}*",
+                'query' => "{$builder->query}",
             ]
         ];
 
