@@ -150,6 +150,18 @@ class ElasticsearchEngine extends Engine
         return $result;
     }
 
+    private function buildColumnFilter($column,$value){
+        return is_array($value) ? [
+            'terms' => [
+                $column => $value,
+            ]
+        ] : [
+            'match_phrase' => [
+                $column => $value,
+            ]
+        ];
+    }
+
     /**
      * Perform the given search on the engine.
      *
@@ -170,17 +182,9 @@ class ElasticsearchEngine extends Engine
         if (array_key_exists('filters', $options) && $options['filters']) {
             foreach ($options['filters'] as $column => $value) {
                 if(is_numeric($value)) {
-                    $filters[] = [
-                        'term' => [
-                            $column => $value,
-                        ]
-                    ];
+                    $filters[] = $this->buildColumnFilter($column, $value);
                 } elseif(is_string($value)) {
-                    $must[] = [
-                        'term' => [
-                            $column => $value
-                        ]
-                    ];
+                    $must[] = $this->buildColumnFilter($column, $value);
                 }
             }
         }
@@ -193,25 +197,13 @@ class ElasticsearchEngine extends Engine
                 switch ($operator) {
                     case "=":
                         if(is_numeric($value)) {
-                            $filters[] = [
-                                'term' => [
-                                    $column => $value,
-                                ]
-                            ];
+                            $filters[] = $this->buildColumnFilter($column, $value);
                         } elseif(is_string($value)) {
-                            $must[] = [
-                                'term' => [
-                                    $column => $value
-                                ]
-                            ];
+                            $must[] = $this->buildColumnFilter($column, $value);
                         }
                         break;
                     case "!=":
-                        $mustNot[] = [
-                            'term' => [
-                                $column => $value,
-                            ]
-                        ];
+                        $mustNot[] = $this->buildColumnFilter($column, $value);
                         break;
                     case ">":
                         //gt
@@ -284,9 +276,7 @@ class ElasticsearchEngine extends Engine
                 if (! is_array($values)) {
                     $values = explode(',', $values);
                 }
-                foreach ($values as $value) {
-                    $should[] = ['term' => [$item['column'] => $value]];
-                }
+                $should[] = $this->buildColumnFilter($item['column'], $values);
             }
         }
 
