@@ -3,9 +3,8 @@
 namespace Laravel\Scout\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Queue\SerializesModels;
 
 class MakeSearchable implements ShouldQueue
 {
@@ -17,16 +16,19 @@ class MakeSearchable implements ShouldQueue
      * @var \Illuminate\Database\Eloquent\Collection
      */
     public $models;
+    public $searchable_index;
 
     /**
      * Create a new job instance.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $models
+     * @param string $searchable_index
      * @return void
      */
-    public function __construct($models)
+    public function __construct($models, $searchable_index = null)
     {
         $this->models = $models;
+        $this->searchable_index = $searchable_index;
     }
 
     /**
@@ -40,6 +42,6 @@ class MakeSearchable implements ShouldQueue
             return;
         }
 
-        $this->models->first()->searchableUsing()->update($this->models);
+        $this->models->first()->searchableUsing()->update($this->models, $this->searchable_index);
     }
 }

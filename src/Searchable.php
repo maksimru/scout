@@ -83,7 +83,7 @@ trait Searchable
             return $models->first()->searchableUsing()->update($models, $searchable_index);
         }
 
-        dispatch((new MakeSearchable($models))
+        dispatch((new MakeSearchable($models, $searchable_index))
             ->onQueue($models->first()->syncWithSearchUsingQueue())
             ->onConnection($models->first()->syncWithSearchUsing()));
     }
