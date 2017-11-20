@@ -68,6 +68,15 @@ trait Searchable
     }
 
     /**
+     * @param  \Illuminate\Database\Eloquent\Collection  $models
+     * @return mixed
+     */
+    public function initEngineFromCollection($models){
+        $model_sample = $models->first();
+        $model_sample->searchableUsing();
+    }
+
+    /**
      * Dispatch the job to make the given models searchable.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $models
@@ -79,11 +88,23 @@ trait Searchable
             return;
         }
 
+        $model_sample = $models->first();
+        $model_class = get_class($model_sample);
+
         if (! config('scout.queue')) {
-            return $models->first()->searchableUsing()->update($models, $searchable_index);
+            return $this->initEngineFromCollection($models)->update($models, $searchable_index);
         }
 
-        dispatch((new MakeSearchable($models, $searchable_index))
+        //if search index is used replace model to array to keep custom data
+        if(!is_null($searchable_index)){
+            $model_array_collection = new BaseCollection();
+            $models->each(function($model) use ($model_array_collection){
+                $model_array_collection->push(array_merge($model->toSearchableArray(),['__key' => $model->getKey(),'__as' => $model->searchableAs()]));
+            });
+            $models = $model_array_collection;
+        }
+
+        dispatch((new MakeSearchable($models, $searchable_index, $model_class))
             ->onQueue($models->first()->syncWithSearchUsingQueue())
             ->onConnection($models->first()->syncWithSearchUsing()));
     }
@@ -100,7 +121,7 @@ trait Searchable
             return;
         }
 
-        return $models->first()->searchableUsing()->delete($models, $searchable_index);
+        return $this->initEngineFromCollection($models)->delete($models, $searchable_index);
     }
 
     /**

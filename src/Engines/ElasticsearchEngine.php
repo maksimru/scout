@@ -66,19 +66,36 @@ class ElasticsearchEngine extends Engine
         $body = new BaseCollection();
 
         $models->each(function ($model) use ($body, $searchable_index) {
-            $array = $model->toSearchableArray();
 
-            if (empty($array)) {
-                return;
+            if(is_object($model)) {
+                $array = $model->toSearchableArray();
+
+                if (empty($array)) {
+                    return;
+                }
+
+                $body->push([
+                    'index' => [
+                        '_index' => $this->index,
+                        '_type' => is_null($searchable_index) ? $model->searchableAs() : $searchable_index,
+                        '_id' => $model->getKey(),
+                    ],
+                ]);
+            } else {
+                $array = $model;
+
+                if (empty($array)) {
+                    return;
+                }
+
+                $body->push([
+                    'index' => [
+                        '_index' => $this->index,
+                        '_type' => is_null($searchable_index) ? $model['__as'] : $searchable_index,
+                        '_id' => $model['__key'],
+                    ],
+                ]);
             }
-
-            $body->push([
-                'index' => [
-                    '_index' => $this->index,
-                    '_type' => is_null($searchable_index) ? $model->searchableAs() : $searchable_index,
-                    '_id' => $model->getKey(),
-                ],
-            ]);
 
             $body->push($array);
         });
@@ -100,13 +117,24 @@ class ElasticsearchEngine extends Engine
         $body = new BaseCollection();
 
         $models->each(function ($model) use ($body, $searchable_index) {
-            $body->push([
-                'delete' => [
-                    '_index' => $this->index,
-                    '_type' => is_null($searchable_index) ? $model->searchableAs() : $searchable_index,
-                    '_id'  => $model->getKey(),
-                ],
-            ]);
+            if(is_object($model)) {
+                $body->push([
+                    'delete' => [
+                        '_index' => $this->index,
+                        '_type' => is_null($searchable_index) ? $model->searchableAs() : $searchable_index,
+                        '_id' => $model->getKey(),
+                    ],
+                ]);
+            }
+            else {
+                $body->push([
+                    'delete' => [
+                        '_index' => $this->index,
+                        '_type' => is_null($searchable_index) ? $model['__as'] : $searchable_index,
+                        '_id' => $model['__key'],
+                    ],
+                ]);
+            }
         });
 
         $this->elasticsearch->bulk([
