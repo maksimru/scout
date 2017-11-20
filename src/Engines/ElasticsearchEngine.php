@@ -82,7 +82,7 @@ class ElasticsearchEngine extends Engine
                     ],
                 ]);
             } else {
-                $array = $model;
+                $array = array_diff_key($model,array_flip(['__key','__as']));
 
                 if (empty($array)) {
                     return;

@@ -105,8 +105,8 @@ trait Searchable
         }
 
         dispatch((new MakeSearchable($models, $searchable_index, $model_class))
-            ->onQueue($models->first()->syncWithSearchUsingQueue())
-            ->onConnection($models->first()->syncWithSearchUsing()));
+            ->onQueue($model_sample->syncWithSearchUsingQueue())
+            ->onConnection($model_sample->syncWithSearchUsing()));
     }
 
     /**

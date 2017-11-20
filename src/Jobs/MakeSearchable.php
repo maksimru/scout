@@ -44,6 +44,9 @@ class MakeSearchable implements ShouldQueue
             return;
         }
 
-        (resolve($this->model_class))->searchableUsing()->update($this->models, $this->searchable_index);
+        if(!is_null($this->model_class))
+            (resolve($this->model_class))->searchableUsing()->update($this->models, $this->searchable_index);
+        else
+            $this->models->first()->searchableUsing()->update($this->models, $this->searchable_index);
     }
 }
