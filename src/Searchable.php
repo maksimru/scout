@@ -73,7 +73,7 @@ trait Searchable
      */
     public function initEngineFromCollection($models){
         $model_sample = $models->first();
-        $model_sample->searchableUsing();
+        return $model_sample->searchableUsing();
     }
 
     /**
