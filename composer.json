@@ -25,7 +25,7 @@
     },
     "require-dev": {
         "algolia/algoliasearch-client-php": "^1.10",
-        "elasticsearch/elasticsearch": "^5.0",
+        "elasticsearch/elasticsearch": "^6.0",
         "mockery/mockery": "~0.9",
         "phpunit/phpunit": "~5.0"
     },
